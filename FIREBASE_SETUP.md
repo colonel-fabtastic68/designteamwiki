@@ -3,10 +3,10 @@
 ## 🔥 Firebase Project Configuration
 
 **Project Details:**
-- Project ID: `designteam-d7406`
-- Project Number: `948857435235`
-- Web API Key: `AIzaSyC7PDRoe7hiaEgnpZWTrHJmnddboY20tsA`
-- Storage Bucket: `gs://designteam-d7406.firebasestorage.app`
+- Project ID: `[HIDDEN - Use environment variable REACT_APP_FIREBASE_PROJECT_ID]`
+- Project Number: `[HIDDEN - Use environment variable REACT_APP_FIREBASE_MESSAGING_SENDER_ID]`
+- Web API Key: `[HIDDEN - Use environment variable REACT_APP_FIREBASE_API_KEY]`
+- Storage Bucket: `[HIDDEN - Use environment variable REACT_APP_FIREBASE_STORAGE_BUCKET]`
 
 ## 📋 Required Setup Steps
 
