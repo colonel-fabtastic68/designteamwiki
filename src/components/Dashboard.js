@@ -29,6 +29,7 @@ import { db } from '../firebase';
 import TeamMembersModal from './TeamMembersModal';
 import AccountRequests from './AccountRequests';
 import DarkModeToggle from './DarkModeToggle';
+import DiscordKnowledgeChat from './DiscordKnowledgeChat';
 
 const subteams = [
   { id: 'driver-controls', name: 'Driver Controls', icon: Settings, color: 'bg-blue-500' },
@@ -580,6 +581,9 @@ function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Discord Knowledge Chat */}
+      <DiscordKnowledgeChat />
     </div>
   );
 }

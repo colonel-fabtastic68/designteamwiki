@@ -1,0 +1,75 @@
+# Google App Engine Configuration for Discord Knowledge Chat API
+# Deploy with: gcloud app deploy
+
+runtime: python311
+
+# Instance class (F1 = free tier eligible, F2/F4 = faster)
+instance_class: F1
+
+# Environment variables (non-sensitive)
+env_variables:
+  PINECONE_INDEX_NAME: "discord-knowledge"
+  FLASK_ENV: "production"
+
+# For production, use Secret Manager instead of plain env_vars:
+# 1. Create secrets in Google Cloud:
+#    echo -n "your-openai-key" | gcloud secrets create openai-api-key --data-file=-
+#    echo -n "your-pinecone-key" | gcloud secrets create pinecone-api-key --data-file=-
+#
+# 2. Grant access:
+#    gcloud secrets add-iam-policy-binding openai-api-key \
+#      --member=serviceAccount:PROJECT_ID@appspot.gserviceaccount.com \
+#      --role=roles/secretmanager.secretAccessor
+#
+# 3. Uncomment the env_variables section below and comment out the plain text versions
+
+# Using Secret Manager (RECOMMENDED for production):
+# env_variables:
+#   OPENAI_API_KEY: ${OPENAI_API_KEY}
+#   PINECONE_API_KEY: ${PINECONE_API_KEY}
+
+# Using plain environment variables (NOT RECOMMENDED for production):
+# Only use this for testing, then migrate to Secret Manager
+env_variables:
+  OPENAI_API_KEY: "your-openai-key-here"
+  PINECONE_API_KEY: "your-pinecone-key-here"
+
+# Automatic scaling configuration
+automatic_scaling:
+  # Minimum instances (0 = scale to zero when idle)
+  min_instances: 0
+  # Maximum instances
+  max_instances: 5
+  # Scale up when CPU usage exceeds this threshold
+  target_cpu_utilization: 0.65
+  # Scale up when concurrent requests exceed this
+  target_throughput_utilization: 0.75
+
+# Health check configuration
+liveness_check:
+  path: "/api/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+
+readiness_check:
+  path: "/api/health"
+  check_interval_sec: 5
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+  app_start_timeout_sec: 300
+
+# Handlers (optional - App Engine will use app.py by default)
+handlers:
+# Route static files (if any)
+- url: /static
+  static_dir: static
+  secure: always
+
+# Route all API requests
+- url: /.*
+  script: auto
+  secure: always
+

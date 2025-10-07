@@ -8,6 +8,7 @@ A lightweight internal documentation system for the 49ers Racing IC race teams. 
 - **Subteam Organization**: 7 main subteams (Driver Controls, Chassis, Electronics, Vehicle Dynamics, Aerodynamics, Business, Powertrain)
 - **Document Management**: Create, view, and organize documents by subteam and tags
 - **File Attachments**: Upload and manage various file types (PDFs, images, etc.)
+- **Discord Knowledge Chat**: AI-powered chat that answers questions based on Discord history (NEW!)
 - **Modern UI**: Clean, responsive design with 49ers team branding
 - **Real-time Data**: All data stored in Google Firestore for real-time updates
 
@@ -15,7 +16,10 @@ A lightweight internal documentation system for the 49ers Racing IC race teams. 
 
 - **Frontend**: React 18 with React Router
 - **Styling**: Tailwind CSS
-- **Backend**: Firebase (Authentication, Firestore, Storage)
+- **Backend**: 
+  - Firebase (Authentication, Firestore, Storage)
+  - Python Flask API (Discord chat feature)
+- **AI/ML**: OpenAI GPT-4, Pinecone Vector Database
 - **Icons**: Lucide React
 - **Build Tool**: Create React App
 
@@ -95,6 +99,30 @@ A lightweight internal documentation system for the 49ers Racing IC race teams. 
    npm run build
    ```
 
+## Discord Knowledge Chat Setup
+
+The wiki now includes an AI-powered chat feature that lets users ask questions about team Discord conversations!
+
+### Quick Setup (5 minutes)
+
+See **[QUICKSTART_CHAT.md](QUICKSTART_CHAT.md)** for a 5-minute setup guide.
+
+### Full Documentation
+
+See **[DISCORD_CHAT_SETUP.md](DISCORD_CHAT_SETUP.md)** for complete deployment instructions, cost estimates, and troubleshooting.
+
+### Requirements
+- Python 3.8+
+- OpenAI API key
+- Pinecone API key with Discord data indexed
+- Discord bot that scrapes and stores messages (not included)
+
+### Basic Setup
+1. Set up the backend API (see `backend/README.md`)
+2. Configure environment variables
+3. Start both React and Flask servers
+4. Chat icon appears in bottom right of Dashboard
+
 ## Usage
 
 ### Authentication
@@ -120,6 +148,12 @@ A lightweight internal documentation system for the 49ers Racing IC race teams. 
 - Files are stored in Firebase Storage
 - Users can view and download attachments
 
+### Discord Knowledge Chat
+1. Click the **purple chat icon** in the bottom right corner
+2. Ask questions about team discussions, projects, or technical topics
+3. The AI searches Discord history and provides relevant answers with sources
+4. View the source messages (author, channel, relevance score)
+
 ## Deployment
 
 ### NameCheap Hosting
@@ -138,18 +172,26 @@ A lightweight internal documentation system for the 49ers Racing IC race teams. 
 
 ```
 src/
-├── components/          # React components
-│   ├── Login.js        # Authentication screen
-│   ├── Dashboard.js    # Main dashboard with subteam cards
-│   ├── CreateDocument.js # Document creation form
-│   ├── SubteamPosts.js # Subteam document list
-│   └── DocumentView.js # Individual document view
-├── contexts/           # React contexts
-│   └── AuthContext.js  # Authentication context
-├── firebase.js         # Firebase configuration
-├── App.js             # Main app component with routing
-├── index.js           # App entry point
-└── index.css          # Global styles with Tailwind
+├── components/                # React components
+│   ├── Login.js              # Authentication screen
+│   ├── Dashboard.js          # Main dashboard with subteam cards
+│   ├── CreateDocument.js     # Document creation form
+│   ├── SubteamPosts.js       # Subteam document list
+│   ├── DocumentView.js       # Individual document view
+│   └── DiscordKnowledgeChat.js # AI chat component (NEW)
+├── contexts/                 # React contexts
+│   ├── AuthContext.js        # Authentication context
+│   └── DarkModeContext.js    # Dark mode context
+├── firebase.js               # Firebase configuration
+├── App.js                   # Main app component with routing
+├── index.js                 # App entry point
+└── index.css                # Global styles with Tailwind
+
+backend/                      # Flask API for Discord chat (NEW)
+├── app.py                   # Main Flask application
+├── requirements.txt         # Python dependencies
+├── Dockerfile              # Docker configuration
+└── README.md               # Backend documentation
 ```
 
 ## Customization

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.49ersracing.discordbot</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/bakercobb/Documents/Projects/DesignSite/discord-bot/run_bot.sh</string>
+    </array>
+    
+    <key>WorkingDirectory</key>
+    <string>/Users/bakercobb/Documents/Projects/DesignSite/discord-bot</string>
+    
+    <key>RunAtLoad</key>
+    <true/>
+    
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    
+    <key>StandardOutPath</key>
+    <string>/Users/bakercobb/Documents/Projects/DesignSite/discord-bot/bot_output.log</string>
+    
+    <key>StandardErrorPath</key>
+    <string>/Users/bakercobb/Documents/Projects/DesignSite/discord-bot/bot_error.log</string>
+    
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>
+
