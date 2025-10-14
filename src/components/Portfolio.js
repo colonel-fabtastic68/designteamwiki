@@ -21,7 +21,6 @@ function Portfolio() {
     { id: 'experience', title: 'Experience', content: '', required: true },
     { id: 'contact', title: 'Contact', content: '', required: true }
   ]);
-  const [editingSectionId, setEditingSectionId] = useState(null);
 
   const loadPortfolio = useCallback(async () => {
     if (!currentUser) return;
@@ -98,7 +97,6 @@ function Portfolio() {
       content: '',
       required: false
     }]);
-    setEditingSectionId(newId);
   };
 
   const handleRemoveSection = (sectionId) => {
@@ -190,7 +188,6 @@ function Portfolio() {
 
       setSuccess('Portfolio saved successfully!');
       setHasPortfolio(true);
-      setEditingSectionId(null);
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
