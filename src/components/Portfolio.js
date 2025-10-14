@@ -13,10 +13,15 @@ function Portfolio() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [urlSlug, setUrlSlug] = useState('');
-  const [content, setContent] = useState('');
   const [hasPortfolio, setHasPortfolio] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [sections, setSections] = useState([
+    { id: 'intro', title: 'Introduction', content: '', required: true },
+    { id: 'experience', title: 'Experience', content: '', required: true },
+    { id: 'contact', title: 'Contact', content: '', required: true }
+  ]);
+  const [editingSectionId, setEditingSectionId] = useState(null);
 
   const loadPortfolio = useCallback(async () => {
     if (!currentUser) return;
@@ -29,7 +34,12 @@ function Portfolio() {
       if (portfolioDoc.exists()) {
         const data = portfolioDoc.data();
         setUrlSlug(data.urlSlug || '');
-        setContent(data.content || '');
+        
+        // Load sections or use defaults
+        if (data.sections && data.sections.length > 0) {
+          setSections(data.sections);
+        }
+        
         setHasPortfolio(true);
       }
     } catch (error) {
@@ -80,6 +90,39 @@ function Portfolio() {
     'align', 'link'
   ];
 
+  const handleAddSection = () => {
+    const newId = `section-${Date.now()}`;
+    setSections([...sections, {
+      id: newId,
+      title: 'New Section',
+      content: '',
+      required: false
+    }]);
+    setEditingSectionId(newId);
+  };
+
+  const handleRemoveSection = (sectionId) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (section?.required) {
+      setError('Cannot remove required sections');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+    setSections(sections.filter(s => s.id !== sectionId));
+  };
+
+  const handleSectionTitleChange = (sectionId, newTitle) => {
+    setSections(sections.map(s => 
+      s.id === sectionId ? { ...s, title: newTitle } : s
+    ));
+  };
+
+  const handleSectionContentChange = (sectionId, newContent) => {
+    setSections(sections.map(s => 
+      s.id === sectionId ? { ...s, content: newContent } : s
+    ));
+  };
+
   const handleSave = async () => {
     if (!urlSlug.trim()) {
       setError('Please enter a URL slug');
@@ -91,14 +134,18 @@ function Portfolio() {
       return;
     }
 
-    if (!content.trim() || content === '<p><br></p>') {
-      setError('Please add some content to your portfolio');
+    // Validate required sections have content
+    const requiredSections = sections.filter(s => s.required);
+    const emptyRequired = requiredSections.find(s => !s.content.trim() || s.content === '<p><br></p>');
+    if (emptyRequired) {
+      setError(`Please add content to the "${emptyRequired.title}" section`);
       return;
     }
 
-    // Check content size (Firestore has 1MB limit per field)
-    const contentSize = new Blob([content]).size;
-    if (contentSize > 900000) { // 900KB to be safe
+    // Check total content size
+    const totalContent = JSON.stringify(sections);
+    const contentSize = new Blob([totalContent]).size;
+    if (contentSize > 900000) {
       setError('Your portfolio content is too large. Please reduce the amount of text or formatting.');
       return;
     }
@@ -124,7 +171,7 @@ function Portfolio() {
         userId: currentUser.uid,
         userEmail: currentUser.email,
         urlSlug: urlSlug,
-        content: content,
+        sections: sections,
         updatedAt: serverTimestamp()
       };
       
@@ -143,6 +190,7 @@ function Portfolio() {
 
       setSuccess('Portfolio saved successfully!');
       setHasPortfolio(true);
+      setEditingSectionId(null);
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
@@ -237,25 +285,75 @@ function Portfolio() {
             </p>
           </div>
 
-          {/* Content Input - Rich Text Editor */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Portfolio Content
-            </label>
-            <div className="bg-white dark:bg-gray-800 rounded-md border border-gray-300 dark:border-gray-600">
-              <ReactQuill
-                theme="snow"
-                value={content}
-                onChange={setContent}
-                modules={modules}
-                formats={formats}
-                placeholder="Write about yourself, your projects, skills, etc..."
-                className="portfolio-editor"
-                readOnly={saving}
-              />
+          {/* Portfolio Sections */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Portfolio Sections</h3>
+              <button
+                onClick={handleAddSection}
+                disabled={saving}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Add Section
+              </button>
             </div>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Use the rich text editor to format your portfolio with headers, lists, links, colors, and more! (Note: Image uploads are not supported to keep portfolios fast and efficient)
+
+            {sections.map((section, index) => (
+              <div key={section.id} className="border border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-gray-50 dark:bg-gray-800 transition-colors">
+                {/* Section Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={section.title}
+                      onChange={(e) => handleSectionTitleChange(section.id, e.target.value)}
+                      disabled={section.required}
+                      className={`text-xl font-bold bg-transparent border-b-2 focus:outline-none transition-colors ${
+                        section.required 
+                          ? 'border-transparent text-gray-700 dark:text-gray-300 cursor-not-allowed' 
+                          : 'border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-gray-500'
+                      }`}
+                      style={{ '--tw-ring-color': '#a49665' }}
+                      placeholder="Section Title"
+                    />
+                    {section.required && (
+                      <span className="ml-2 text-xs text-red-500">*Required</span>
+                    )}
+                  </div>
+                  {!section.required && (
+                    <button
+                      onClick={() => handleRemoveSection(section.id)}
+                      disabled={saving}
+                      className="ml-4 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                      title="Remove section"
+                    >
+                      <AlertCircle className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Section Content Editor */}
+                <div className="bg-white dark:bg-gray-900 rounded-md border border-gray-300 dark:border-gray-600">
+                  <ReactQuill
+                    theme="snow"
+                    value={section.content}
+                    onChange={(value) => handleSectionContentChange(section.id, value)}
+                    modules={modules}
+                    formats={formats}
+                    placeholder={`Add content to your ${section.title.toLowerCase()} section...`}
+                    className="portfolio-editor"
+                    readOnly={saving}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Section {index + 1} of {sections.length} • {section.required ? 'Required section' : 'Optional section'}
+                </p>
+              </div>
+            ))}
+
+            <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+              💡 Tip: Add sections to organize your portfolio (Projects, Skills, Education, etc.)
             </p>
           </div>
 
