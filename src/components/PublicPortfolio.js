@@ -140,12 +140,10 @@ function PublicPortfolio() {
 
           {/* Portfolio Content */}
           <div className="px-8 py-8">
-            <div className="prose dark:prose-invert max-w-none">
-              <div 
-                className="text-gray-700 dark:text-gray-300 text-base leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: portfolio.content }}
-              />
-            </div>
+            <div 
+              className="portfolio-content prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+              dangerouslySetInnerHTML={{ __html: portfolio.content }}
+            />
 
             {/* Metadata */}
             {portfolio.updatedAt && (

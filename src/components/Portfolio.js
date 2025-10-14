@@ -58,24 +58,26 @@ function Portfolio() {
     setError('');
   };
 
-  // Rich text editor modules configuration
+  // Rich text editor modules configuration (no image upload to avoid size limits)
   const modules = {
     toolbar: [
       [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
+      ['bold', 'italic', 'underline', 'strike', 'blockquote'],
       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
       [{ 'color': [] }, { 'background': [] }],
-      ['link', 'image'],
+      [{ 'align': [] }],
+      ['link'],
       ['clean']
     ],
   };
 
   const formats = [
-    'header',
+    'header', 'blockquote',
     'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet',
+    'list', 'bullet', 'indent',
     'color', 'background',
-    'link', 'image'
+    'align', 'link'
   ];
 
   const handleSave = async () => {
@@ -89,8 +91,15 @@ function Portfolio() {
       return;
     }
 
-    if (!content.trim()) {
+    if (!content.trim() || content === '<p><br></p>') {
       setError('Please add some content to your portfolio');
+      return;
+    }
+
+    // Check content size (Firestore has 1MB limit per field)
+    const contentSize = new Blob([content]).size;
+    if (contentSize > 900000) { // 900KB to be safe
+      setError('Your portfolio content is too large. Please reduce the amount of text or formatting.');
       return;
     }
 
@@ -246,7 +255,7 @@ function Portfolio() {
               />
             </div>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Use the rich text editor to format your portfolio with headers, lists, links, and more!
+              Use the rich text editor to format your portfolio with headers, lists, links, colors, and more! (Note: Image uploads are not supported to keep portfolios fast and efficient)
             </p>
           </div>
 
