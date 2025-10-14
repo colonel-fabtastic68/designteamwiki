@@ -10,6 +10,8 @@ import SubteamPosts from './components/SubteamPosts';
 import DocumentView from './components/DocumentView';
 import CreateDocument from './components/CreateDocument';
 import AdminPanel from './components/AdminPanel';
+import Portfolio from './components/Portfolio';
+import PublicPortfolio from './components/PublicPortfolio';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -73,6 +75,18 @@ function App() {
                     <CreateDocument />
                   </AuthenticatedUserRoute>
                 } 
+              />
+              <Route 
+                path="/portfolio" 
+                element={
+                  <AuthenticatedUserRoute>
+                    <Portfolio />
+                  </AuthenticatedUserRoute>
+                } 
+              />
+              <Route 
+                path="/:slug" 
+                element={<PublicPortfolio />} 
               />
             </Routes>
           </div>

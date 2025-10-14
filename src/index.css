@@ -14,4 +14,79 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Rich Text Editor Styles */
+.portfolio-editor .ql-toolbar {
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
+  background: white;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .portfolio-editor .ql-toolbar {
+  background: #1f2937;
+  border-bottom-color: #374151;
+}
+
+.portfolio-editor .ql-container {
+  border: none;
+  font-size: 16px;
+  min-height: 300px;
+}
+
+.portfolio-editor .ql-editor {
+  min-height: 300px;
+  color: #111827;
+}
+
+.dark .portfolio-editor .ql-editor {
+  color: #f3f4f6;
+}
+
+.portfolio-editor .ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.dark .portfolio-editor .ql-editor.ql-blank::before {
+  color: #6b7280;
+}
+
+/* Dark mode toolbar icons */
+.dark .portfolio-editor .ql-stroke {
+  stroke: #d1d5db;
+}
+
+.dark .portfolio-editor .ql-fill {
+  fill: #d1d5db;
+}
+
+.dark .portfolio-editor .ql-picker-label {
+  color: #d1d5db;
+}
+
+.dark .portfolio-editor .ql-picker-options {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+.dark .portfolio-editor .ql-picker-item {
+  color: #d1d5db;
+}
+
+.dark .portfolio-editor .ql-picker-item:hover {
+  color: #ffffff;
+}
+
+/* Active toolbar button */
+.portfolio-editor .ql-toolbar button:hover .ql-stroke,
+.portfolio-editor .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #a49665;
+}
+
+.portfolio-editor .ql-toolbar button:hover .ql-fill,
+.portfolio-editor .ql-toolbar button.ql-active .ql-fill {
+  fill: #a49665;
 } 

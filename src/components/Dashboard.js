@@ -22,14 +22,15 @@ import {
   Shield,
   X,
   Flag,
-  Eye
+  Eye,
+  Briefcase
 } from 'lucide-react';
 import { collection, getDocs, query } from 'firebase/firestore';
 import { db } from '../firebase';
 import TeamMembersModal from './TeamMembersModal';
 import AccountRequests from './AccountRequests';
 import DarkModeToggle from './DarkModeToggle';
-import DiscordKnowledgeChat from './DiscordKnowledgeChat';
+// import DiscordKnowledgeChat from './DiscordKnowledgeChat'; // Temporarily disabled
 
 const subteams = [
   { id: 'driver-controls', name: 'Driver Controls', icon: Settings, color: 'bg-blue-500' },
@@ -106,6 +107,10 @@ function Dashboard() {
 
   const handleFeedback = () => {
     window.open('https://forms.gle/rHjPYdH39xNqTPmz5', '_blank');
+  };
+
+  const handleViewPortfolio = () => {
+    navigate('/portfolio');
   };
 
   // Countdown timer effect
@@ -216,7 +221,9 @@ function Dashboard() {
     }
   };
 
-  const handleSearchInputBlur = () => {
+  const handleSearchInputBlur = (e) => {
+    // Reset border color
+    e.target.style.borderColor = isDarkMode ? '#4B5563' : '#D1D5DB';
     // Hide search results after a short delay to allow clicking on results
     setTimeout(() => {
       setShowSearchResults(false);
@@ -279,23 +286,35 @@ function Dashboard() {
             </div>
             <div className="flex items-center space-x-4">
               {!isGuest && (
-                <button
-                  onClick={handleCreateNew}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors"
-                  style={{
-                    backgroundColor: '#a49665',
-                    '--tw-ring-color': '#a49665'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#8a7d4f';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = '#a49665';
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New Doc
-                </button>
+                <>
+                  <button
+                    onClick={handleViewPortfolio}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors"
+                    style={{
+                      '--tw-ring-color': '#a49665'
+                    }}
+                  >
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    View Portfolio
+                  </button>
+                  <button
+                    onClick={handleCreateNew}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors"
+                    style={{
+                      backgroundColor: '#a49665',
+                      '--tw-ring-color': '#a49665'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#8a7d4f';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#a49665';
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Doc
+                  </button>
+                </>
               )}
               {isGuest && (
                 <div className="inline-flex items-center px-3 py-2 border border-green-300 text-sm font-medium rounded-md text-green-700 bg-green-50">
@@ -340,9 +359,6 @@ function Dashboard() {
                   }}
                   onFocus={(e) => {
                     e.target.style.borderColor = '#a49665';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = isDarkMode ? '#4B5563' : '#D1D5DB';
                   }}
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -582,8 +598,8 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Discord Knowledge Chat */}
-      <DiscordKnowledgeChat />
+      {/* Discord Knowledge Chat - Temporarily disabled */}
+      {/* <DiscordKnowledgeChat /> */}
     </div>
   );
 }
