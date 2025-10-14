@@ -36,6 +36,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import DarkModeToggle from './DarkModeToggle';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const subteamNames = {
   'driver-controls': 'Driver Controls',
@@ -121,6 +123,28 @@ function DocumentView() {
   const [isCommenting, setIsCommenting] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [userNameMap, setUserNameMap] = useState({});
+
+  // Rich text editor configuration
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'align': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const quillFormats = [
+    'header', 'blockquote',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet', 'indent',
+    'color', 'background',
+    'align', 'link'
+  ];
 
   // Helper functions - defined before useCallback hooks
   const getFileIcon = (fileUrl) => {
@@ -657,27 +681,20 @@ function DocumentView() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
                     Content
                   </label>
-                  <textarea
-                    value={editData.content}
-                    onChange={(e) => setEditData(prev => ({ ...prev, content: e.target.value }))}
-                    rows={12}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:border-transparent transition-colors"
-                    style={{
-                      '--tw-ring-color': getSubteamHexColor(document.subteam),
-                      '--tw-border-opacity': '1',
-                      'border-color': getSubteamHexColor(document.subteam)
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = getSubteamHexColor(document.subteam);
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#D1D5DB'; // gray-300
-                    }}
-                    placeholder="Document content"
-                  />
+                  <div className="bg-white dark:bg-gray-800 rounded-md border border-gray-300 dark:border-gray-600">
+                    <ReactQuill
+                      theme="snow"
+                      value={editData.content}
+                      onChange={(value) => setEditData(prev => ({ ...prev, content: value }))}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      placeholder="Edit document content..."
+                      className="document-editor"
+                    />
+                  </div>
                 </div>
               </div>
             ) : (
@@ -694,11 +711,10 @@ function DocumentView() {
                     )}
                   </div>
                 )}
-                <div className="prose max-w-none">
-                  <div className="whitespace-pre-wrap text-gray-900 dark:text-gray-100 leading-relaxed transition-colors">
-                    {document.content}
-                  </div>
-                </div>
+                <div 
+                  className="portfolio-content prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+                  dangerouslySetInnerHTML={{ __html: document.content }}
+                />
               </>
             )}
           </div>

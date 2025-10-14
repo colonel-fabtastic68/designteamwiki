@@ -23,6 +23,8 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import DarkModeToggle from './DarkModeToggle';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const subteams = [
   { id: 'driver-controls', name: 'Driver Controls', color: 'bg-blue-500', borderColor: 'border-blue-500', bgColor: 'bg-blue-50', serialPrefix: '4' },
@@ -101,6 +103,28 @@ function CreateDocument() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [serialNumber, setSerialNumber] = useState('');
+
+  // Rich text editor configuration
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'align': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const quillFormats = [
+    'header', 'blockquote',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet', 'indent',
+    'color', 'background',
+    'align', 'link'
+  ];
 
   // Generate serial number when subteam is selected
   useEffect(() => {
@@ -636,23 +660,20 @@ function CreateDocument() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors">
                 Content *
               </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                style={{
-                  '--tw-ring-color': getCurrentSubteamColor(),
-                  '--tw-border-opacity': '1'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = getCurrentSubteamBorderColor();
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = isDarkMode ? '#4B5563' : '#D1D5DB'; // gray-300
-                }}
-                placeholder="Enter your document content here..."
-              />
+              <div className="bg-white dark:bg-gray-800 rounded-md border border-gray-300 dark:border-gray-600">
+                <ReactQuill
+                  theme="snow"
+                  value={content}
+                  onChange={setContent}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="Enter document content with rich formatting..."
+                  className="document-editor"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Use the toolbar to format your content with headers, lists, links, and more.
+              </p>
             </div>
 
             {/* Attachments */}
