@@ -259,7 +259,7 @@ function Portfolio() {
       endYear: '',
       current: false,
       description: '',
-      photo: '',
+      photos: [],
       skills: []
     };
     setExperiences([...experiences, newExperience]);
@@ -290,7 +290,11 @@ function Portfolio() {
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
       
-      updateExperience(expId, 'photo', downloadURL);
+      // Add to photos array
+      const experience = experiences.find(exp => exp.id === expId);
+      const updatedPhotos = [...(experience.photos || []), downloadURL];
+      updateExperience(expId, 'photos', updatedPhotos);
+      
       setSuccess('Photo uploaded!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
@@ -299,6 +303,12 @@ function Portfolio() {
       setTimeout(() => setError(''), 3000);
     }
     setUploadingImage(false);
+  };
+
+  const removeExperiencePhoto = (expId, photoIndex) => {
+    const experience = experiences.find(exp => exp.id === expId);
+    const updatedPhotos = experience.photos.filter((_, idx) => idx !== photoIndex);
+    updateExperience(expId, 'photos', updatedPhotos);
   };
 
   const updateExperience = (id, field, value) => {
@@ -929,47 +939,6 @@ function Portfolio() {
                                 </div>
                               </div>
 
-                              {/* Photo Upload */}
-                              {editingExperienceId === exp.id && (
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Project Photo (optional)
-                                  </label>
-                                  {exp.photo && (
-                                    <div className="mb-3 relative">
-                                      <img src={exp.photo} alt="Experience" className="w-full max-w-md rounded-lg border border-gray-300 dark:border-gray-600" />
-                                      <button
-                                        onClick={() => updateExperience(exp.id, 'photo', '')}
-                                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                                      >
-                                        <XIcon className="h-4 w-4" />
-                                      </button>
-                                    </div>
-                                  )}
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => handleExperiencePhotoUpload(exp.id, e.target.files[0])}
-                                    className="block w-full text-sm text-gray-500 dark:text-gray-400
-                                      file:mr-4 file:py-2 file:px-4
-                                      file:rounded-md file:border-0
-                                      file:text-sm file:font-semibold
-                                      file:bg-blue-50 file:text-blue-700
-                                      hover:file:bg-blue-100
-                                      dark:file:bg-blue-900 dark:file:text-blue-200
-                                      dark:hover:file:bg-blue-800"
-                                  />
-                                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Max 2MB. Recommended for project showcases.</p>
-                                </div>
-                              )}
-
-                              {/* Photo Display (when not editing) */}
-                              {editingExperienceId !== exp.id && exp.photo && (
-                                <div>
-                                  <img src={exp.photo} alt="Experience" className="w-full max-w-md rounded-lg border border-gray-300 dark:border-gray-600 shadow-md" />
-                                </div>
-                              )}
-
                               {/* Description with rich text */}
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1017,6 +986,55 @@ function Portfolio() {
                                 </div>
                                 {editingExperienceId === exp.id && (
                                   <SkillInput onAdd={(skill) => addSkillToExperience(exp.id, skill)} />
+                                )}
+                              </div>
+
+                              {/* Photo Gallery - Below Skills */}
+                              <div>
+                                {editingExperienceId === exp.id && (
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                      Project Photos
+                                    </label>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => handleExperiencePhotoUpload(exp.id, e.target.files[0])}
+                                      className="block w-full text-sm text-gray-500 dark:text-gray-400 mb-3
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-md file:border-0
+                                        file:text-sm file:font-semibold
+                                        file:bg-blue-50 file:text-blue-700
+                                        hover:file:bg-blue-100
+                                        dark:file:bg-blue-900 dark:file:text-blue-200
+                                        dark:hover:file:bg-blue-800"
+                                    />
+                                    <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">Max 2MB per photo. Add multiple to showcase your project.</p>
+                                  </div>
+                                )}
+                                
+                                {exp.photos && exp.photos.length > 0 && (
+                                  <div className="relative">
+                                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
+                                      {exp.photos.map((photo, idx) => (
+                                        <div key={idx} className="relative flex-shrink-0">
+                                          <img 
+                                            src={photo} 
+                                            alt={`${exp.jobTitle} - Photo ${idx + 1}`} 
+                                            className="h-40 w-auto rounded-lg border border-gray-300 dark:border-gray-600 shadow-md object-cover" 
+                                          />
+                                          {editingExperienceId === exp.id && (
+                                            <button
+                                              onClick={() => removeExperiencePhoto(exp.id, idx)}
+                                              className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                                            >
+                                              <XIcon className="h-3 w-3" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
                                 )}
                               </div>
 

@@ -319,43 +319,48 @@ function PublicPortfolio() {
                     <div className="space-y-6">
                       {portfolio.experiences && portfolio.experiences.length > 0 ? (
                         portfolio.experiences.map((exp) => (
-                          <div key={exp.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                          <div key={exp.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-shadow">
                             {/* Experience Header - Clickable */}
                             <div 
                               onClick={() => toggleExperienceExpanded(exp.id)}
                               className="p-6 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             >
-                              <div className="flex items-start justify-between">
+                              <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
                                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                    <Briefcase className="h-5 w-5 text-blue-500" />
+                                    <Briefcase className="h-5 w-5 text-blue-500 flex-shrink-0" />
                                     {exp.jobTitle}
                                   </h3>
                                   <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">{exp.company}</p>
                                   <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                                    <Calendar className="h-4 w-4" />
+                                    <Calendar className="h-4 w-4 flex-shrink-0" />
                                     {exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : 'Start Date'} - {exp.current ? 'Present' : exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : 'End Date'}
                                   </p>
                                 </div>
-                                <button className="p-2 transition-transform" style={{ transform: expandedExperienceIds.includes(exp.id) ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                                  <ChevronDown className="h-6 w-6 text-gray-400" />
-                                </button>
+                                <div className="flex-shrink-0">
+                                  <div 
+                                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-300"
+                                    style={{ transform: expandedExperienceIds.includes(exp.id) ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                                  >
+                                    <ChevronDown className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                                  </div>
+                                </div>
                               </div>
                             </div>
 
                             {/* Experience Content - Collapsible */}
-                            {expandedExperienceIds.includes(exp.id) && (exp.photo || exp.description || (exp.skills && exp.skills.length > 0)) && (
-                              <div className="p-6 bg-white dark:bg-gray-900 space-y-4">
-                                {exp.photo && (
-                                  <div>
-                                    <img src={exp.photo} alt={exp.jobTitle} className="w-full max-w-md rounded-lg border border-gray-300 dark:border-gray-600 shadow-md" />
-                                  </div>
-                                )}
+                            {expandedExperienceIds.includes(exp.id) && (exp.photos || exp.description || (exp.skills && exp.skills.length > 0)) && (
+                              <div className="p-6 bg-white dark:bg-gray-900 space-y-6 border-t border-gray-200 dark:border-gray-700">
                                 {exp.description && exp.description !== '<p><br></p>' && (
-                                  <div 
-                                    className="portfolio-content prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
-                                    dangerouslySetInnerHTML={{ __html: exp.description }}
-                                  />
+                                  <div>
+                                    <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wider">
+                                      Description
+                                    </h4>
+                                    <div 
+                                      className="portfolio-content prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+                                      dangerouslySetInnerHTML={{ __html: exp.description }}
+                                    />
+                                  </div>
                                 )}
                                 {exp.skills && exp.skills.length > 0 && (
                                   <div>
@@ -372,6 +377,29 @@ function PublicPortfolio() {
                                         </span>
                                       ))}
                                     </div>
+                                  </div>
+                                )}
+                                {exp.photos && exp.photos.length > 0 && (
+                                  <div>
+                                    <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wider">
+                                      Project Photos
+                                    </h4>
+                                    <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
+                                      {exp.photos.map((photo, idx) => (
+                                        <div key={idx} className="flex-shrink-0">
+                                          <img 
+                                            src={photo} 
+                                            alt={`${exp.jobTitle} - Photo ${idx + 1}`} 
+                                            className="h-48 w-auto rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-lg hover:shadow-xl transition-shadow object-cover cursor-pointer"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              window.open(photo, '_blank');
+                                            }}
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Click any photo to view full size</p>
                                   </div>
                                 )}
                               </div>
