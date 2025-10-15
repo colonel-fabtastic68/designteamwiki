@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ArrowLeft, Save, ExternalLink, AlertCircle, Lock } from 'lucide-react';
+import { ArrowLeft, Save, ExternalLink, AlertCircle, Lock, Plus, GripVertical, Trash2, Edit3, Check, X as XIcon } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
@@ -21,6 +21,9 @@ function Portfolio() {
     { id: 'experience', title: 'Experience', content: '', required: true },
     { id: 'contact', title: 'Contact', content: '', required: true }
   ]);
+  const [editingSectionId, setEditingSectionId] = useState(null);
+  const [editingTitleId, setEditingTitleId] = useState(null);
+  const [tempTitle, setTempTitle] = useState('');
 
   const loadPortfolio = useCallback(async () => {
     if (!currentUser) return;
@@ -53,21 +56,17 @@ function Portfolio() {
   }, [loadPortfolio]);
 
   const validateSlug = (slug) => {
-    // Only allow lowercase letters, numbers, and hyphens
     const regex = /^[a-z0-9-]+$/;
     return regex.test(slug);
   };
 
   const handleSlugChange = (e) => {
-    // Don't allow slug changes if portfolio already exists
     if (hasPortfolio) return;
-    
     const value = e.target.value.toLowerCase().replace(/\s+/g, '-');
     setUrlSlug(value);
     setError('');
   };
 
-  // Rich text editor modules configuration (no image upload to avoid size limits)
   const modules = {
     toolbar: [
       [{ 'header': [1, 2, 3, false] }],
@@ -91,12 +90,14 @@ function Portfolio() {
 
   const handleAddSection = () => {
     const newId = `section-${Date.now()}`;
-    setSections([...sections, {
+    const newSection = {
       id: newId,
       title: 'New Section',
       content: '',
       required: false
-    }]);
+    };
+    setSections([...sections, newSection]);
+    setEditingSectionId(newId);
   };
 
   const handleRemoveSection = (sectionId) => {
@@ -107,18 +108,46 @@ function Portfolio() {
       return;
     }
     setSections(sections.filter(s => s.id !== sectionId));
+    if (editingSectionId === sectionId) {
+      setEditingSectionId(null);
+    }
   };
 
-  const handleSectionTitleChange = (sectionId, newTitle) => {
-    setSections(sections.map(s => 
-      s.id === sectionId ? { ...s, title: newTitle } : s
-    ));
+  const handleStartEditTitle = (section) => {
+    if (section.required) return;
+    setEditingTitleId(section.id);
+    setTempTitle(section.title);
+  };
+
+  const handleSaveTitle = (sectionId) => {
+    if (tempTitle.trim()) {
+      setSections(sections.map(s => 
+        s.id === sectionId ? { ...s, title: tempTitle } : s
+      ));
+    }
+    setEditingTitleId(null);
+    setTempTitle('');
+  };
+
+  const handleCancelEditTitle = () => {
+    setEditingTitleId(null);
+    setTempTitle('');
   };
 
   const handleSectionContentChange = (sectionId, newContent) => {
     setSections(sections.map(s => 
       s.id === sectionId ? { ...s, content: newContent } : s
     ));
+  };
+
+  const moveSection = (index, direction) => {
+    const newSections = [...sections];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (newIndex < 0 || newIndex >= newSections.length) return;
+    
+    [newSections[index], newSections[newIndex]] = [newSections[newIndex], newSections[index]];
+    setSections(newSections);
   };
 
   const handleSave = async () => {
@@ -132,7 +161,6 @@ function Portfolio() {
       return;
     }
 
-    // Validate required sections have content
     const requiredSections = sections.filter(s => s.required);
     const emptyRequired = requiredSections.find(s => !s.content.trim() || s.content === '<p><br></p>');
     if (emptyRequired) {
@@ -140,7 +168,6 @@ function Portfolio() {
       return;
     }
 
-    // Check total content size
     const totalContent = JSON.stringify(sections);
     const contentSize = new Blob([totalContent]).size;
     if (contentSize > 900000) {
@@ -153,7 +180,6 @@ function Portfolio() {
     setSuccess('');
 
     try {
-      // Check if slug is already taken by another user
       const slugRef = doc(db, 'portfolio-slugs', urlSlug);
       const slugDoc = await getDoc(slugRef);
       
@@ -163,7 +189,6 @@ function Portfolio() {
         return;
       }
 
-      // Save the portfolio
       const portfolioRef = doc(db, 'portfolios', currentUser.uid);
       const portfolioData = {
         userId: currentUser.uid,
@@ -173,14 +198,12 @@ function Portfolio() {
         updatedAt: serverTimestamp()
       };
       
-      // Only add createdAt for new portfolios
       if (!hasPortfolio) {
         portfolioData.createdAt = serverTimestamp();
       }
       
       await setDoc(portfolioRef, portfolioData, { merge: true });
 
-      // Save the slug mapping
       await setDoc(slugRef, {
         userId: currentUser.uid,
         userEmail: currentUser.email
@@ -188,8 +211,8 @@ function Portfolio() {
 
       setSuccess('Portfolio saved successfully!');
       setHasPortfolio(true);
+      setEditingSectionId(null);
       
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error saving portfolio:', error);
@@ -216,185 +239,258 @@ function Portfolio() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <button
-                onClick={() => navigate('/')}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </button>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Portfolio</h1>
-            <div className="w-32"></div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white dark:bg-gray-900 shadow rounded-lg p-6 space-y-6">
-          {/* URL Slug Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Portfolio URL Slug {hasPortfolio && <span className="text-xs text-gray-500">(locked)</span>}
-            </label>
+            <button
+              onClick={() => navigate('/')}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </button>
+            
+            {/* URL Slug Display */}
             <div className="flex items-center space-x-2">
-              <span className="text-gray-500 dark:text-gray-400">49ersicdesign.team/</span>
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={urlSlug}
-                  onChange={handleSlugChange}
-                  placeholder="your-name"
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 transition-colors ${
-                    hasPortfolio 
-                      ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed' 
-                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
-                  }`}
-                  style={{ '--tw-ring-color': '#a49665' }}
-                  disabled={saving || hasPortfolio}
-                />
-                {hasPortfolio && (
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <Lock className="h-4 w-4 text-gray-400" />
-                  </div>
-                )}
-              </div>
+              <span className="text-sm text-gray-500 dark:text-gray-400">49ersicdesign.team/</span>
+              <input
+                type="text"
+                value={urlSlug}
+                onChange={handleSlugChange}
+                placeholder="your-slug"
+                disabled={hasPortfolio}
+                className={`px-2 py-1 text-sm border rounded-md transition-colors ${
+                  hasPortfolio 
+                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed' 
+                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
+                }`}
+              />
+              {hasPortfolio && <Lock className="h-4 w-4 text-gray-400" />}
+            </div>
+
+            <div className="flex items-center space-x-3">
               {hasPortfolio && urlSlug && (
                 <button
                   onClick={handleViewPublic}
                   className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-                  title="View public portfolio"
                 >
-                  <ExternalLink className="h-4 w-4" />
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Preview
                 </button>
               )}
-            </div>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {hasPortfolio 
-                ? '🔒 Your URL slug is permanently set and cannot be changed' 
-                : 'Choose a unique URL for your portfolio (lowercase letters, numbers, and hyphens only)'
-              }
-            </p>
-          </div>
-
-          {/* Portfolio Sections */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Portfolio Sections</h3>
               <button
-                onClick={handleAddSection}
+                onClick={handleSave}
                 disabled={saving}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors"
+                style={{
+                  backgroundColor: saving ? '#8a7d4f' : '#a49665',
+                  '--tw-ring-color': '#a49665'
+                }}
               >
                 <Save className="h-4 w-4 mr-2" />
+                {saving ? 'Saving...' : 'Save Portfolio'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Error/Success Messages */}
+      {error && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+          <div className="flex items-center p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+            <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+            <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {success && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+          <div className="flex items-center p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+            <p className="text-sm text-green-700 dark:text-green-400">{success}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left Sidebar - Section Management */}
+          <aside className="lg:w-64 flex-shrink-0">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 sticky top-24">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Sections</h3>
+              
+              <div className="space-y-2 mb-4">
+                {sections.map((section, index) => (
+                  <div 
+                    key={section.id}
+                    className={`flex items-center gap-2 p-2 rounded-md transition-colors ${
+                      editingSectionId === section.id 
+                        ? 'bg-gray-200 dark:bg-gray-800' 
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <div className="flex flex-col gap-1">
+                      <button
+                        onClick={() => moveSection(index, 'up')}
+                        disabled={index === 0}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <GripVertical className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => moveSection(index, 'down')}
+                        disabled={index === sections.length - 1}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <GripVertical className="h-3 w-3" />
+                      </button>
+                    </div>
+                    
+                    <button
+                      onClick={() => setEditingSectionId(section.id)}
+                      className="flex-1 text-left text-sm text-gray-700 dark:text-gray-300 truncate"
+                    >
+                      {section.title}
+                      {section.required && <span className="text-xs text-red-500 ml-1">*</span>}
+                    </button>
+                    
+                    {!section.required && (
+                      <button
+                        onClick={() => handleRemoveSection(section.id)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={handleAddSection}
+                className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              >
+                <Plus className="h-4 w-4 mr-2" />
                 Add Section
               </button>
             </div>
+          </aside>
 
-            {sections.map((section, index) => (
-              <div key={section.id} className="border border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-gray-50 dark:bg-gray-800 transition-colors">
-                {/* Section Header */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={section.title}
-                      onChange={(e) => handleSectionTitleChange(section.id, e.target.value)}
-                      disabled={section.required}
-                      className={`text-xl font-bold bg-transparent border-b-2 focus:outline-none transition-colors ${
-                        section.required 
-                          ? 'border-transparent text-gray-700 dark:text-gray-300 cursor-not-allowed' 
-                          : 'border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-gray-400 dark:hover:border-gray-500'
-                      }`}
-                      style={{ '--tw-ring-color': '#a49665' }}
-                      placeholder="Section Title"
-                    />
-                    {section.required && (
-                      <span className="ml-2 text-xs text-red-500">*Required</span>
+          {/* Main Portfolio Preview/Edit Area */}
+          <main className="flex-1 min-w-0">
+            {/* Portfolio Sections */}
+            <div className="space-y-8">
+              {sections.map((section) => (
+                <section
+                  key={section.id}
+                  id={`section-${section.id}`}
+                  className={`bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 transition-all ${
+                    editingSectionId === section.id ? 'ring-2 ring-blue-500' : ''
+                  }`}
+                >
+                  {/* Section Header */}
+                  <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-200 dark:border-gray-700">
+                    {editingTitleId === section.id ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <input
+                          type="text"
+                          value={tempTitle}
+                          onChange={(e) => setTempTitle(e.target.value)}
+                          className="flex-1 text-3xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none text-gray-900 dark:text-white"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleSaveTitle(section.id)}
+                          className="p-2 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-md"
+                        >
+                          <Check className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={handleCancelEditTitle}
+                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md"
+                        >
+                          <XIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 flex-1">
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                          {section.title}
+                        </h2>
+                        {!section.required && (
+                          <button
+                            onClick={() => handleStartEditTitle(section)}
+                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
-                  {!section.required && (
-                    <button
-                      onClick={() => handleRemoveSection(section.id)}
-                      disabled={saving}
-                      className="ml-4 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                      title="Remove section"
+
+                  {/* Section Content */}
+                  {editingSectionId === section.id ? (
+                    <div>
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-300 dark:border-gray-600 mb-4">
+                        <ReactQuill
+                          theme="snow"
+                          value={section.content}
+                          onChange={(value) => handleSectionContentChange(section.id, value)}
+                          modules={modules}
+                          formats={formats}
+                          placeholder={`Add content to your ${section.title.toLowerCase()} section...`}
+                          className="portfolio-editor"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => setEditingSectionId(null)}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          Done Editing
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => setEditingSectionId(section.id)}
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-4 rounded-md transition-colors group relative"
                     >
-                      <AlertCircle className="h-5 w-5" />
-                    </button>
+                      {section.content && section.content !== '<p><br></p>' ? (
+                        <div 
+                          className="portfolio-content prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+                          dangerouslySetInnerHTML={{ __html: section.content }}
+                        />
+                      ) : (
+                        <p className="text-gray-400 dark:text-gray-500 italic">
+                          Click to add content to this section...
+                        </p>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-5 dark:bg-opacity-20 rounded-md">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-4 py-2 rounded-md shadow-lg">
+                          Click to edit
+                        </span>
+                      </div>
+                    </div>
                   )}
-                </div>
-
-                {/* Section Content Editor */}
-                <div className="bg-white dark:bg-gray-900 rounded-md border border-gray-300 dark:border-gray-600">
-                  <ReactQuill
-                    theme="snow"
-                    value={section.content}
-                    onChange={(value) => handleSectionContentChange(section.id, value)}
-                    modules={modules}
-                    formats={formats}
-                    placeholder={`Add content to your ${section.title.toLowerCase()} section...`}
-                    className="portfolio-editor"
-                    readOnly={saving}
-                  />
-                </div>
-                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  Section {index + 1} of {sections.length} • {section.required ? 'Required section' : 'Optional section'}
-                </p>
-              </div>
-            ))}
-
-            <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-              💡 Tip: Add sections to organize your portfolio (Projects, Skills, Education, etc.)
-            </p>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="flex items-center p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+                </section>
+              ))}
             </div>
-          )}
 
-          {/* Success Message */}
-          {success && (
-            <div className="flex items-center p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-              <p className="text-sm text-green-700 dark:text-green-400">{success}</p>
+            {/* Helper Text */}
+            <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm text-blue-700 dark:text-blue-400">
+                💡 <strong>Tip:</strong> Click on any section to edit it. Use the sidebar to reorder sections or add new ones. Don't forget to save your changes!
+              </p>
             </div>
-          )}
-
-          {/* Save Button */}
-          <div className="flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors"
-              style={{
-                backgroundColor: saving ? '#8a7d4f' : '#a49665',
-                '--tw-ring-color': '#a49665'
-              }}
-              onMouseEnter={(e) => {
-                if (!saving) e.target.style.backgroundColor = '#8a7d4f';
-              }}
-              onMouseLeave={(e) => {
-                if (!saving) e.target.style.backgroundColor = '#a49665';
-              }}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Portfolio'}
-            </button>
-          </div>
+          </main>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
 
 export default Portfolio;
-
