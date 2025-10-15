@@ -887,8 +887,8 @@ function Portfolio() {
                                     theme="snow"
                                     value={exp.description}
                                     onChange={(value) => updateExperience(exp.id, 'description', value)}
-                                    modules={{...modules, toolbar: [...modules.toolbar, ['image']]}}
-                                    formats={[...formats, 'image']}
+                                    modules={modules}
+                                    formats={formats}
                                     placeholder="Describe your responsibilities and achievements..."
                                     className="portfolio-editor"
                                   />
