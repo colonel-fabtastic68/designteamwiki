@@ -71,6 +71,7 @@ function Portfolio() {
   // Experience entries
   const [experiences, setExperiences] = useState([]);
   const [editingExperienceId, setEditingExperienceId] = useState(null);
+  const [expandedExperienceIds, setExpandedExperienceIds] = useState([]);
 
   const loadPortfolio = useCallback(async () => {
     if (!currentUser) return;
@@ -258,10 +259,46 @@ function Portfolio() {
       endYear: '',
       current: false,
       description: '',
+      photo: '',
       skills: []
     };
     setExperiences([...experiences, newExperience]);
     setEditingExperienceId(newExperience.id);
+  };
+
+  const handleExperiencePhotoUpload = async (expId, file) => {
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image must be less than 2MB');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, `portfolio-images/${currentUser.uid}/experience/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      updateExperience(expId, 'photo', downloadURL);
+      setSuccess('Photo uploaded!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setError('Failed to upload image');
+      setTimeout(() => setError(''), 3000);
+    }
+    setUploadingImage(false);
   };
 
   const updateExperience = (id, field, value) => {
@@ -298,6 +335,14 @@ function Portfolio() {
     
     [newExperiences[index], newExperiences[newIndex]] = [newExperiences[newIndex], newExperiences[index]];
     setExperiences(newExperiences);
+  };
+
+  const toggleExperienceExpanded = (expId) => {
+    if (expandedExperienceIds.includes(expId)) {
+      setExpandedExperienceIds(expandedExperienceIds.filter(id => id !== expId));
+    } else {
+      setExpandedExperienceIds([...expandedExperienceIds, expId]);
+    }
   };
 
   const handleSave = async () => {
@@ -734,6 +779,13 @@ function Portfolio() {
                           {/* Experience Header (always visible) */}
                           <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800">
                             <div className="flex items-center gap-3 flex-1">
+                              <button
+                                onClick={() => toggleExperienceExpanded(exp.id)}
+                                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-transform"
+                                style={{ transform: expandedExperienceIds.includes(exp.id) ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                              >
+                                <ChevronDown className="h-5 w-5" />
+                              </button>
                               <GripVertical className="h-5 w-5 text-gray-400" />
                               <div className="flex-1">
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -770,8 +822,8 @@ function Portfolio() {
                             </div>
                           </div>
 
-                          {/* Experience Content (accordion - shown when editing) */}
-                          {editingExperienceId === exp.id && (
+                          {/* Experience Content (accordion - shown when expanded OR editing) */}
+                          {(expandedExperienceIds.includes(exp.id) || editingExperienceId === exp.id) && (
                             <div className="p-6 bg-white dark:bg-gray-900 space-y-6">
                               {/* Job Title and Company */}
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -877,22 +929,70 @@ function Portfolio() {
                                 </div>
                               </div>
 
+                              {/* Photo Upload */}
+                              {editingExperienceId === exp.id && (
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Project Photo (optional)
+                                  </label>
+                                  {exp.photo && (
+                                    <div className="mb-3 relative">
+                                      <img src={exp.photo} alt="Experience" className="w-full max-w-md rounded-lg border border-gray-300 dark:border-gray-600" />
+                                      <button
+                                        onClick={() => updateExperience(exp.id, 'photo', '')}
+                                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                      >
+                                        <XIcon className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  )}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleExperiencePhotoUpload(exp.id, e.target.files[0])}
+                                    className="block w-full text-sm text-gray-500 dark:text-gray-400
+                                      file:mr-4 file:py-2 file:px-4
+                                      file:rounded-md file:border-0
+                                      file:text-sm file:font-semibold
+                                      file:bg-blue-50 file:text-blue-700
+                                      hover:file:bg-blue-100
+                                      dark:file:bg-blue-900 dark:file:text-blue-200
+                                      dark:hover:file:bg-blue-800"
+                                  />
+                                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Max 2MB. Recommended for project showcases.</p>
+                                </div>
+                              )}
+
+                              {/* Photo Display (when not editing) */}
+                              {editingExperienceId !== exp.id && exp.photo && (
+                                <div>
+                                  <img src={exp.photo} alt="Experience" className="w-full max-w-md rounded-lg border border-gray-300 dark:border-gray-600 shadow-md" />
+                                </div>
+                              )}
+
                               {/* Description with rich text */}
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                   Role Description
                                 </label>
-                                <div className="bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-300 dark:border-gray-600">
-                                  <ReactQuill
-                                    theme="snow"
-                                    value={exp.description}
-                                    onChange={(value) => updateExperience(exp.id, 'description', value)}
-                                    modules={modules}
-                                    formats={formats}
-                                    placeholder="Describe your responsibilities and achievements..."
-                                    className="portfolio-editor"
+                                {editingExperienceId === exp.id ? (
+                                  <div className="bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-300 dark:border-gray-600">
+                                    <ReactQuill
+                                      theme="snow"
+                                      value={exp.description}
+                                      onChange={(value) => updateExperience(exp.id, 'description', value)}
+                                      modules={modules}
+                                      formats={formats}
+                                      placeholder="Describe your responsibilities and achievements..."
+                                      className="portfolio-editor"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div 
+                                    className="portfolio-content prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+                                    dangerouslySetInnerHTML={{ __html: exp.description || '<p class="text-gray-400 italic">No description added yet.</p>' }}
                                   />
-                                </div>
+                                )}
                               </div>
 
                               {/* Skills */}
@@ -904,26 +1004,32 @@ function Portfolio() {
                                   {(exp.skills || []).map((skill, idx) => (
                                     <span key={idx} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                                       {skill}
-                                      <button
-                                        onClick={() => removeSkillFromExperience(exp.id, idx)}
-                                        className="ml-2 text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100"
-                                      >
-                                        ×
-                                      </button>
+                                      {editingExperienceId === exp.id && (
+                                        <button
+                                          onClick={() => removeSkillFromExperience(exp.id, idx)}
+                                          className="ml-2 text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100"
+                                        >
+                                          ×
+                                        </button>
+                                      )}
                                     </span>
                                   ))}
                                 </div>
-                                <SkillInput onAdd={(skill) => addSkillToExperience(exp.id, skill)} />
+                                {editingExperienceId === exp.id && (
+                                  <SkillInput onAdd={(skill) => addSkillToExperience(exp.id, skill)} />
+                                )}
                               </div>
 
-                              <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
-                                <button
-                                  onClick={() => setEditingExperienceId(null)}
-                                  className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                  Done Editing
-                                </button>
-                              </div>
+                              {editingExperienceId === exp.id && (
+                                <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+                                  <button
+                                    onClick={() => setEditingExperienceId(null)}
+                                    className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                  >
+                                    Done Editing
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

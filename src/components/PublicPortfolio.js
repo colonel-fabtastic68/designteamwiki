@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ArrowLeft, User, Calendar, Menu, X, Mail, Phone, Briefcase } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Menu, X, Mail, Phone, Briefcase, ChevronDown } from 'lucide-react';
 
 function PublicPortfolio() {
   const { slug } = useParams();
@@ -12,6 +12,7 @@ function PublicPortfolio() {
   const [notFound, setNotFound] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedExperienceIds, setExpandedExperienceIds] = useState([]);
 
   const loadPortfolio = useCallback(async () => {
     setLoading(true);
@@ -104,6 +105,14 @@ function PublicPortfolio() {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const toggleExperienceExpanded = (expId) => {
+    if (expandedExperienceIds.includes(expId)) {
+      setExpandedExperienceIds(expandedExperienceIds.filter(id => id !== expId));
+    } else {
+      setExpandedExperienceIds([...expandedExperienceIds, expId]);
+    }
   };
 
   if (loading) {
@@ -311,8 +320,11 @@ function PublicPortfolio() {
                       {portfolio.experiences && portfolio.experiences.length > 0 ? (
                         portfolio.experiences.map((exp) => (
                           <div key={exp.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                            {/* Experience Header */}
-                            <div className="p-6 bg-gray-50 dark:bg-gray-800">
+                            {/* Experience Header - Clickable */}
+                            <div 
+                              onClick={() => toggleExperienceExpanded(exp.id)}
+                              className="p-6 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            >
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
@@ -325,12 +337,20 @@ function PublicPortfolio() {
                                     {exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : 'Start Date'} - {exp.current ? 'Present' : exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : 'End Date'}
                                   </p>
                                 </div>
+                                <button className="p-2 transition-transform" style={{ transform: expandedExperienceIds.includes(exp.id) ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                                  <ChevronDown className="h-6 w-6 text-gray-400" />
+                                </button>
                               </div>
                             </div>
 
-                            {/* Experience Content */}
-                            {(exp.description || (exp.skills && exp.skills.length > 0)) && (
+                            {/* Experience Content - Collapsible */}
+                            {expandedExperienceIds.includes(exp.id) && (exp.photo || exp.description || (exp.skills && exp.skills.length > 0)) && (
                               <div className="p-6 bg-white dark:bg-gray-900 space-y-4">
+                                {exp.photo && (
+                                  <div>
+                                    <img src={exp.photo} alt={exp.jobTitle} className="w-full max-w-md rounded-lg border border-gray-300 dark:border-gray-600 shadow-md" />
+                                  </div>
+                                )}
                                 {exp.description && exp.description !== '<p><br></p>' && (
                                   <div 
                                     className="portfolio-content prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
