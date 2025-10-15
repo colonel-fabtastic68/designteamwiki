@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
-import { ArrowLeft, Save, ExternalLink, AlertCircle, Lock, Plus, GripVertical, Trash2, Edit3, Check, X as XIcon } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
+import { ArrowLeft, Save, ExternalLink, AlertCircle, Lock, Plus, GripVertical, Trash2, Edit3, Check, X as XIcon, Upload, User as UserIcon } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
@@ -24,6 +25,13 @@ function Portfolio() {
   const [editingSectionId, setEditingSectionId] = useState(null);
   const [editingTitleId, setEditingTitleId] = useState(null);
   const [tempTitle, setTempTitle] = useState('');
+  
+  // Header info
+  const [profilePicture, setProfilePicture] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [subtitle, setSubtitle] = useState('49ers Racing Team Member');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const loadPortfolio = useCallback(async () => {
     if (!currentUser) return;
@@ -41,6 +49,12 @@ function Portfolio() {
         if (data.sections && data.sections.length > 0) {
           setSections(data.sections);
         }
+        
+        // Load header info
+        setProfilePicture(data.profilePicture || '');
+        setFirstName(data.firstName || '');
+        setLastName(data.lastName || '');
+        setSubtitle(data.subtitle || '49ers Racing Team Member');
         
         setHasPortfolio(true);
       }
@@ -150,6 +164,42 @@ function Portfolio() {
     setSections(newSections);
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image must be less than 2MB');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, `portfolio-images/${currentUser.uid}/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      setProfilePicture(downloadURL);
+      setSuccess('Profile picture uploaded!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setError('Failed to upload image');
+      setTimeout(() => setError(''), 3000);
+    }
+    setUploadingImage(false);
+  };
+
   const handleSave = async () => {
     if (!urlSlug.trim()) {
       setError('Please enter a URL slug');
@@ -195,6 +245,10 @@ function Portfolio() {
         userEmail: currentUser.email,
         urlSlug: urlSlug,
         sections: sections,
+        profilePicture: profilePicture,
+        firstName: firstName,
+        lastName: lastName,
+        subtitle: subtitle,
         updatedAt: serverTimestamp()
       };
       
@@ -380,6 +434,66 @@ function Portfolio() {
 
           {/* Main Portfolio Preview/Edit Area */}
           <main className="flex-1 min-w-0">
+            {/* Header Section */}
+            <div className="bg-gradient-to-r from-gray-700 to-gray-900 px-8 py-12 rounded-lg shadow-lg mb-8">
+              <div className="flex items-center space-x-6">
+                {/* Profile Picture */}
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                    {profilePicture ? (
+                      <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="h-12 w-12 text-gray-600 dark:text-gray-400" />
+                    )}
+                  </div>
+                  <label 
+                    htmlFor="profile-upload"
+                    className="absolute bottom-0 right-0 bg-white dark:bg-gray-800 rounded-full p-2 shadow-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    {uploadingImage ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 dark:border-white"></div>
+                    ) : (
+                      <Upload className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                    )}
+                  </label>
+                  <input
+                    id="profile-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Name and Subtitle */}
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="First Name"
+                      className="px-3 py-2 text-2xl font-bold bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors"
+                    />
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Last Name"
+                      className="px-3 py-2 text-2xl font-bold bg-white/10 border border-white/20 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="Your subtitle (e.g., Mechanical Engineer)"
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Portfolio Sections */}
             <div className="space-y-8">
               {sections.map((section) => (

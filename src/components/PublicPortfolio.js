@@ -230,16 +230,22 @@ function PublicPortfolio() {
           <main className="flex-1 min-w-0">
             {/* Portfolio Header */}
             <div className="bg-gradient-to-r from-gray-700 to-gray-900 px-8 py-12 rounded-t-lg shadow-lg mb-8">
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-                  <User className="h-10 w-10 text-gray-600 dark:text-gray-400" />
+              <div className="flex items-center space-x-6">
+                <div className="w-24 h-24 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                  {portfolio.profilePicture ? (
+                    <img src={portfolio.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="h-12 w-12 text-gray-600 dark:text-gray-400" />
+                  )}
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-white mb-2">
-                    {portfolio.userEmail.split('@')[0]}
+                    {portfolio.firstName && portfolio.lastName 
+                      ? `${portfolio.firstName} ${portfolio.lastName}`
+                      : portfolio.userEmail?.split('@')[0] || 'Portfolio'}
                   </h1>
-                  <p className="text-gray-300 text-sm">
-                    49ers Racing Team Member
+                  <p className="text-gray-300">
+                    {portfolio.subtitle || '49ers Racing Team Member'}
                   </p>
                 </div>
               </div>
