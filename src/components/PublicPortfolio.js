@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ArrowLeft, User, Calendar, Menu, X } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Menu, X, Mail, Phone, Briefcase } from 'lucide-react';
 
 function PublicPortfolio() {
   const { slug } = useParams();
@@ -262,10 +262,113 @@ function PublicPortfolio() {
                   <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 pb-4 border-b-2 border-gray-200 dark:border-gray-700">
                     {section.title}
                   </h2>
-                  <div 
-                    className="portfolio-content prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
-                    dangerouslySetInnerHTML={{ __html: section.content }}
-                  />
+                  
+                  {section.id === 'contact' ? (
+                    /* Contact Section - Special rendering */
+                    <div className="space-y-6">
+                      {(portfolio.contactEmail || portfolio.contactPhone) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {portfolio.contactEmail && (
+                            <a
+                              href={`mailto:${portfolio.contactEmail}`}
+                              className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+                            >
+                              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-800 transition-colors">
+                                <Mail className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Email</p>
+                                <p className="text-lg font-semibold text-gray-900 dark:text-white">{portfolio.contactEmail}</p>
+                              </div>
+                            </a>
+                          )}
+                          {portfolio.contactPhone && (
+                            <a
+                              href={`tel:${portfolio.contactPhone}`}
+                              className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+                            >
+                              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-full group-hover:bg-green-200 dark:group-hover:bg-green-800 transition-colors">
+                                <Phone className="h-5 w-5 text-green-600 dark:text-green-300" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone</p>
+                                <p className="text-lg font-semibold text-gray-900 dark:text-white">{portfolio.contactPhone}</p>
+                              </div>
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      {section.content && section.content !== '<p><br></p>' && (
+                        <div 
+                          className="portfolio-content prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+                          dangerouslySetInnerHTML={{ __html: section.content }}
+                        />
+                      )}
+                    </div>
+                  ) : section.id === 'experience' ? (
+                    /* Experience Section - Special rendering with accordion */
+                    <div className="space-y-6">
+                      {portfolio.experiences && portfolio.experiences.length > 0 ? (
+                        portfolio.experiences.map((exp) => (
+                          <div key={exp.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                            {/* Experience Header */}
+                            <div className="p-6 bg-gray-50 dark:bg-gray-800">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                    <Briefcase className="h-5 w-5 text-blue-500" />
+                                    {exp.jobTitle}
+                                  </h3>
+                                  <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">{exp.company}</p>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                                    <Calendar className="h-4 w-4" />
+                                    {exp.startMonth && exp.startYear ? `${exp.startMonth} ${exp.startYear}` : 'Start Date'} - {exp.current ? 'Present' : exp.endMonth && exp.endYear ? `${exp.endMonth} ${exp.endYear}` : 'End Date'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Experience Content */}
+                            {(exp.description || (exp.skills && exp.skills.length > 0)) && (
+                              <div className="p-6 bg-white dark:bg-gray-900 space-y-4">
+                                {exp.description && exp.description !== '<p><br></p>' && (
+                                  <div 
+                                    className="portfolio-content prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+                                    dangerouslySetInnerHTML={{ __html: exp.description }}
+                                  />
+                                )}
+                                {exp.skills && exp.skills.length > 0 && (
+                                  <div>
+                                    <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wider">
+                                      Skills Utilized
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                      {exp.skills.map((skill, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium"
+                                        >
+                                          {skill}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-500 dark:text-gray-400 italic">No experience entries yet.</p>
+                      )}
+                    </div>
+                  ) : (
+                    /* Normal Section */
+                    <div 
+                      className="portfolio-content prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+                      dangerouslySetInnerHTML={{ __html: section.content }}
+                    />
+                  )}
                 </section>
               ))}
             </div>
